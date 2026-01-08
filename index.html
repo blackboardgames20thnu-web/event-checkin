@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบสแกนเข้างาน - Staff Only</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f0f2f5; padding: 20px; }
+        #reader { width: 100%; max-width: 400px; margin: auto; background: white; border-radius: 10px; overflow: hidden; }
+        #result { margin-top: 20px; font-weight: bold; padding: 15px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h2>ระบบสแกนเข้างาน</h2>
+    <div id="reader"></div>
+    <div id="result">เตรียมพร้อมสแกน...</div>
+
+    <script>
+        // https://script.google.com/macros/s/AKfycbzvyeuPVVKbW-ZgqDZ3Et9wtijIP484juSUkyI25plI6HDZ5U26MEv9E34UvTQvnhyH/exec ***
+        const webAppUrl = "ใส่_URL_ที่ได้จาก_Google_Apps_Script_ตรงนี้";
+
+        function onScanSuccess(decodedText) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerText = "กำลังตรวจสอบ ID: " + decodedText;
+            resultDiv.className = "";
+
+            // หยุดสแกนชั่วคราวเพื่อรอผล
+            html5QrcodeScanner.pause();
+
+            fetch(`${webAppUrl}?id=${decodedText}`)
+                .then(response => response.text())
+                .then(data => {
+                    resultDiv.innerText = data;
+                    if (data.includes("สำเร็จ")) {
+                        resultDiv.className = "success";
+                    } else {
+                        resultDiv.className = "error";
+                    }
+                    // รอ 2 วินาทีแล้วเริ่มสแกนต่อ
+                    setTimeout(() => { 
+                        html5QrcodeScanner.resume(); 
+                        resultDiv.innerText = "เตรียมพร้อมสแกน...";
+                        resultDiv.className = "";
+                    }, 2000);
+                })
+                .catch(error => {
+                    alert("เกิดข้อผิดพลาดในการเชื่อมต่อ");
+                    html5QrcodeScanner.resume();
+                });
+        }
+
+        var html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+        html5QrcodeScanner.render(onScanSuccess);
+    </script>
+</body>
+</html>
