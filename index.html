@@ -3,118 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบจัดการผู้เข้าร่วมงาน</title>
+    <title>Event Manager Pro</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: 'Kanit', sans-serif; background-color: #f4f7f9; margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #eee; }
-        .tab-btn { flex: 1; padding: 10px; border: none; background: none; cursor: pointer; font-size: 16px; font-weight: 600; color: #888; }
-        .tab-btn.active { color: #1a73e8; border-bottom: 3px solid #1a73e8; }
-        .content { display: none; }
-        .content.active { display: block; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #1557b0; }
-        #reader { width: 100%; border-radius: 10px; border: 2px solid #eee; }
-        #result, #regResult { margin-top: 15px; padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; }
-        .success { background: #d4edda; color: #155724; }
-        .error { background: #f8d7da; color: #721c24; }
-        .qr-display { margin-top: 20px; text-align: center; }
-        img#generatedQr { width: 200px; height: 200px; margin-top: 10px; border: 1px solid #eee; }
+        body { font-family: 'Kanit', sans-serif; background: #f8f9fa; padding: 10px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .nav { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; }
+        .nav button { padding: 10px 20px; border: none; border-radius: 20px; cursor: pointer; background: #ddd; white-space: nowrap; }
+        .nav button.active { background: #007bff; color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { border: 1px solid #eee; padding: 10px; text-align: left; }
+        .btn-del { color: red; cursor: pointer; }
+        #reader { width: 100%; max-width: 400px; margin: auto; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="tabs">
-        <button class="tab-btn active" onclick="openTab('register')">ลงทะเบียน</button>
-        <button class="tab-btn" onclick="openTab('scan')">สแกนเข้างาน</button>
-    </div>
+<div class="nav">
+    <button onclick="showPage('scan')" id="btn-scan" class="active">สแกนเข้างาน</button>
+    <button onclick="showPage('reg')">เพิ่ม/นำเข้าชื่อ</button>
+    <button onclick="showPage('list'); loadList();">ประวัติ/จัดการ</button>
+</div>
 
-    <div id="register" class="content active">
-        <h2>ลงทะเบียนใหม่</h2>
-        <input type="text" id="regId" placeholder="รหัสประจำตัว (ID)">
-        <input type="text" id="regName" placeholder="ชื่อ-นามสกุล">
-        <input type="text" id="regUni" placeholder="มหาวิทยาลัย">
-        <button onclick="registerUser()">บันทึกและสร้าง QR Code</button>
-        <div id="regResult"></div>
-        <div class="qr-display" id="qrContainer" style="display:none;">
-            <p>QR Code ของคุณ:</p>
-            <img id="generatedQr" src="" alt="QR Code">
-            <p><small>แคปหน้าจอเพื่อเก็บไว้สแกน</small></p>
-        </div>
-    </div>
+<div id="page-scan" class="card">
+    <h3>สแกน QR Code (มีเสียง)</h3>
+    <div id="reader"></div>
+    <div id="scan-res" style="text-align:center; padding:15px; font-weight:bold;"></div>
+</div>
 
-    <div id="scan" class="content">
-        <h2>สแกน QR Code</h2>
-        <div id="reader"></div>
-        <div id="result">เตรียมพร้อมสแกน...</div>
+<div id="page-reg" class="card" style="display:none;">
+    <h3>เพิ่มรายชื่อ</h3>
+    <input type="text" id="in-id" placeholder="ID">
+    <input type="text" id="in-name" placeholder="ชื่อ">
+    <input type="text" id="in-uni" placeholder="มหาวิทยาลัย">
+    <button style="background:green; color:white; margin-top:10px;" onclick="addSingle()">บันทึกรายคน</button>
+    <hr>
+    <h3>นำเข้าจาก Excel (.xlsx)</h3>
+    <input type="file" id="excel-file" accept=".xlsx, .xls">
+    <p><small>*คอลัมน์ต้องเรียงเป็น ID, Name, University</small></p>
+</div>
+
+<div id="page-list" class="card" style="display:none;">
+    <h3>รายชื่อทั้งหมด</h3>
+    <div style="overflow-x:auto;">
+        <table id="data-table">
+            <thead><tr><th>ID</th><th>ชื่อ</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+            <tbody></tbody>
+        </table>
     </div>
 </div>
 
+<audio id="beep" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+
 <script>
-    // *** แก้ไข URL นี้ให้เป็นของคุณ ***
     const webAppUrl = "https://script.google.com/macros/s/AKfycbzvyeuPVVKbW-ZgqDZ3Et9wtijIP484juSUkyI25plI6HDZ5U26MEv9E34UvTQvnhyH/exec";
+    const beep = document.getElementById("beep");
 
-    function openTab(tabName) {
-        document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(tabName).classList.add('active');
-        event.currentTarget.classList.add('active');
+    function showPage(p) {
+        document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
+        document.getElementById('page-' + p).style.display = 'block';
+        document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
     }
 
-    function registerUser() {
-        const id = document.getElementById('regId').value;
-        const name = document.getElementById('regName').value;
-        const uni = document.getElementById('regUni').value;
-        const resDiv = document.getElementById('regResult');
-
-        if(!id || !name || !uni) return alert("กรุณากรอกข้อมูลให้ครบทุกช่อง");
-
-        resDiv.innerText = "กำลังบันทึกข้อมูล...";
-        resDiv.className = "";
-
-        fetch(`${webAppUrl}?action=register&id=${id}&name=${encodeURIComponent(name)}&uni=${encodeURIComponent(uni)}`)
-            .then(res => res.text())
-            .then(data => {
-                resDiv.innerText = data;
-                resDiv.className = "success";
-                
-                // สร้างรูป QR Code ให้ทันทีบนหน้าเว็บ
-                const qrImg = document.getElementById('generatedQr');
-                qrImg.src = `https://quickchart.io/qr?text=${encodeURIComponent(id)}&size=300`;
-                document.getElementById('qrContainer').style.display = "block";
-            })
-            .catch(err => {
-                resDiv.innerText = "เกิดข้อผิดพลาด";
-                resDiv.className = "error";
-            });
-    }
-
-    // ส่วนของกล้องสแกน
-    function onScanSuccess(decodedText) {
-        const resultDiv = document.getElementById('result');
-        resultDiv.innerText = "กำลังตรวจสอบ ID: " + decodedText;
+    // ฟังก์ชันสแกน
+    function onScanSuccess(txt) {
+        beep.play(); // ดังตี๊ด
+        document.getElementById('scan-res').innerText = "กำลังตรวจ: " + txt;
         html5QrcodeScanner.pause();
+        fetch(`${webAppUrl}?id=${txt}`)
+            .then(r => r.text())
+            .then(d => {
+                alert(d);
+                html5QrcodeScanner.resume();
+            });
+    }
+    var html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 20, qrbox: 250 });
+    html5QrcodeScanner.render(onScanSuccess);
 
-        fetch(`${webAppUrl}?id=${encodeURIComponent(decodedText)}`)
-            .then(response => response.text())
+    // โหลดประวัติและจัดการ
+    function loadList() {
+        const tbody = document.querySelector("#data-table tbody");
+        tbody.innerHTML = "กำลังโหลด...";
+        fetch(`${webAppUrl}?action=getList`)
+            .then(r => r.json())
             .then(data => {
-                resultDiv.innerText = data;
-                resultDiv.className = data.includes("สำเร็จ") ? "success" : "error";
-                setTimeout(() => { 
-                    html5QrcodeScanner.resume(); 
-                    resultDiv.innerText = "เตรียมพร้อมสแกน...";
-                    resultDiv.className = "";
-                }, 3000);
+                tbody.innerHTML = "";
+                data.forEach(item => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${item.id}</td>
+                            <td>${item.name}</td>
+                            <td>${item.status}</td>
+                            <td>
+                                <small onclick="viewQr('${item.id}')" style="color:blue; cursor:pointer;">QR</small> | 
+                                <small onclick="delRow(${item.row})" class="btn-del">ลบ</small>
+                            </td>
+                        </tr>`;
+                });
             });
     }
 
-    var html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-    html5QrcodeScanner.render(onScanSuccess);
-</script>
+    function viewQr(id) {
+        window.open(`https://quickchart.io/qr?text=${id}&size=300`);
+    }
 
+    function delRow(row) {
+        if(confirm("ยืนยันการลบ?")) {
+            fetch(`${webAppUrl}?action=delete&row=${row}`).then(() => loadList());
+        }
+    }
+
+    // นำเข้า Excel
+    document.getElementById('excel-file').addEventListener('change', function(e) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
+            
+            alert("กำลังนำเข้า " + (json.length-1) + " รายชื่อ...");
+            json.forEach((row, index) => {
+                if(index > 0 && row[0]) { // ข้ามหัวตาราง
+                    fetch(`${webAppUrl}?action=register&id=${row[0]}&name=${encodeURIComponent(row[1])}&uni=${encodeURIComponent(row[2])}`);
+                }
+            });
+            alert("ดำเนินการเสร็จสิ้น (ข้อมูลอาจใช้เวลาสักครู่เพื่อไปโผล่ที่ตาราง)");
+        };
+        reader.readAsArrayBuffer(e.target.files[0]);
+    });
+
+    function addSingle() {
+        const id = document.getElementById('in-id').value;
+        const name = document.getElementById('in-name').value;
+        const uni = document.getElementById('in-uni').value;
+        fetch(`${webAppUrl}?action=register&id=${id}&name=${encodeURIComponent(name)}&uni=${encodeURIComponent(uni)}`)
+            .then(() => alert("บันทึกสำเร็จ"));
+    }
+</script>
 </body>
 </html>
