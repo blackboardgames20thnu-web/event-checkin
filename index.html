@@ -3,45 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Event Pro - All-in-One System</title>
+    <title>Event Pro - Ultimate System</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root { --main: #6366f1; --accent: #a5b4fc; --bg: #0f172a; --glass: rgba(30, 41, 59, 0.7); }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: #f8fafc; margin: 0; padding-bottom: 80px; overflow-x: hidden; }
-        
         .header { padding: 25px 20px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .header h1 { margin: 0; font-size: 22px; color: #fff; }
-        
         .container { padding: 15px; max-width: 800px; margin: auto; }
         .card { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 20px; margin-bottom: 20px; display: none; }
         .card.active { display: block; animation: slideUp 0.4s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Scanner */
         #reader { width: 100%; border-radius: 20px; overflow: hidden; border: none !important; box-shadow: 0 0 25px rgba(99, 102, 241, 0.2); }
-        #scan-indicator { height: 4px; width: 100%; background: #334155; margin-top: 15px; border-radius: 2px; overflow: hidden; }
-        #scan-bar { height: 100%; width: 0%; background: var(--main); transition: width 0.3s; }
-
-        /* Inputs & Buttons */
         input { width: 100%; padding: 14px; margin: 10px 0; border-radius: 12px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
-        .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; background: var(--main); color: white; }
-        .btn:active { transform: scale(0.98); }
-
-        /* Navigation */
+        .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; background: var(--main); color: white; margin-bottom: 10px; }
         .nav { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(30, 41, 59, 0.9); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 35px; display: flex; padding: 6px; gap: 4px; z-index: 2000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .nav-item { border: none; background: none; color: #94a3b8; padding: 12px 18px; border-radius: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; white-space: nowrap; }
         .nav-item.active { background: var(--main); color: white; }
-
-        /* Live Display Entry */
-        .live-entry { background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%); padding: 25px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; animation: flipIn 0.6s ease-out; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .live-entry { background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%); padding: 25px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; animation: flipIn 0.6s ease-out; }
         @keyframes flipIn { from { opacity: 0; transform: rotateX(-30deg) translateY(20px); } to { opacity: 1; transform: rotateX(0deg) translateY(0); } }
-
-        /* Toast Notification */
-        #status-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 3000; width: 80%; max-width: 300px; padding: 15px; border-radius: 16px; text-align: center; font-weight: bold; display: none; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+        #status-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 3000; width: 80%; max-width: 300px; padding: 15px; border-radius: 16px; text-align: center; font-weight: bold; display: none; }
     </style>
 </head>
 <body>
@@ -49,42 +36,44 @@
 <div id="status-toast"></div>
 
 <div class="header">
-    <h1><i class="fas fa-bolt" style="color:#fbbf24"></i> Event <span style="color:var(--main)">Manager</span></h1>
-    <p id="sub-title">ระบบจัดการผู้เข้าร่วมงานระดับมืออาชีพ</p>
+    <h1><i class="fas fa-bolt" style="color:#fbbf24"></i> Event <span style="color:var(--main)">Pro Max</span></h1>
+    <p>สแกนต่อเนื่อง • ดู QR • ดาวน์โหลดยกชุด</p>
 </div>
 
 <div class="container">
     <div id="page-scan" class="card active">
-        <h3 style="margin-top:0"><i class="fas fa-camera"></i> Scan Mode</h3>
         <div id="reader"></div>
-        <div id="scan-indicator"><div id="scan-bar"></div></div>
-        <p id="scan-msg" style="text-align:center; color:#94a3b8; margin-top:15px">เล็ง QR เพื่อเช็คอิน (สแกนต่อเนื่อง)</p>
+        <p style="text-align:center; color:#94a3b8; margin-top:15px">เล็ง QR เพื่อเช็คอิน (ระบบออโต้)</p>
     </div>
 
     <div id="page-reg" class="card">
         <h3><i class="fas fa-user-plus"></i> ลงทะเบียน</h3>
-        <input type="text" id="in-id" placeholder="ID (เช่น BGG001)">
+        <input type="text" id="in-id" placeholder="รหัส ID">
         <input type="text" id="in-name" placeholder="ชื่อ-นามสกุล">
-        <input type="text" id="in-uni" placeholder="มหาวิทยาลัย / สังกัด">
+        <input type="text" id="in-uni" placeholder="สังกัด / มหาวิทยาลัย">
         <button class="btn" onclick="addSingle()">บันทึกรายชื่อ</button>
-        <div style="margin-top:25px; border-top:1px solid #334155; padding-top:20px">
-            <h4><i class="fas fa-file-excel"></i> นำเข้าผ่าน Excel</h4>
-            <input type="file" id="excel-file" style="border:none; padding:0; background:none;">
-        </div>
+        <hr style="border:0; border-top:1px solid #334155; margin:20px 0">
+        <p>นำเข้าผ่าน Excel</p>
+        <input type="file" id="excel-file">
     </div>
 
     <div id="page-list" class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center">
-            <h3><i class="fas fa-database"></i> รายชื่อทั้งหมด</h3>
-            <button onclick="loadList()" style="background:none; border:none; color:var(--main); cursor:pointer"><i class="fas fa-sync"></i> รีเฟรช</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+            <h3 style="margin:0"><i class="fas fa-list"></i> รายชื่อ</h3>
+            <div style="display:flex; gap:10px">
+                <button onclick="loadList()" style="background:none; border:none; color:var(--main); cursor:pointer"><i class="fas fa-sync"></i></button>
+            </div>
         </div>
-        <div id="history-list" style="margin-top:15px"></div>
+        <button class="btn" style="background:#059669; font-size:14px" onclick="downloadAllQRs()">
+            <i class="fas fa-file-archive"></i> Download All QR Codes (ZIP)
+        </button>
+        <div id="history-list"></div>
     </div>
 
-    <div id="page-live" class="card" style="max-width:900px; background:rgba(15,23,42,0.95); border-color:var(--main);">
+    <div id="page-live" class="card">
         <h2 style="text-align:center; color:var(--main);"><i class="fas fa-broadcast-tower"></i> Live Dashboard</h2>
         <div id="live-container">
-            <div id="welcome-msg" style="text-align:center; padding:100px; color:#475569; font-size:20px;">รอการเช็คอิน...</div>
+            <div id="welcome-msg" style="text-align:center; padding:100px; color:#475569;">รอการสแกน...</div>
         </div>
     </div>
 </div>
@@ -99,15 +88,12 @@
 <audio id="beep" src="https://www.soundjay.com/button/beep-07.wav"></audio>
 
 <script>
-    // ******************************************
-    // ระบุ URL ของ Google Apps Script ของคุณที่นี่
-    // ******************************************
     const webAppUrl = "https://script.google.com/macros/s/AKfycbzvyeuPVVKbW-ZgqDZ3Et9wtijIP484juSUkyI25plI6HDZ5U26MEv9E34UvTQvnhyH/exec";
-
     const beep = document.getElementById("beep");
     let isScanning = true;
     let liveInterval;
     let lastProcessedTime = new Date().getTime();
+    let globalUserData = []; // เก็บข้อมูลไว้สำหรับดาวน์โหลด ZIP
 
     function showPage(p, btn) {
         document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
@@ -117,46 +103,29 @@
         if(p !== 'live') clearInterval(liveInterval);
     }
 
-    function showToast(msg, type) {
-        const toast = document.getElementById('status-toast');
-        toast.innerText = msg;
-        toast.style.display = 'block';
-        toast.style.background = type === 'success' ? '#10b981' : '#ef4444';
-        setTimeout(() => { toast.style.display = 'none'; }, 2000);
-    }
-
-    // --- ระบบสแกน ---
     function onScanSuccess(txt) {
         if (!isScanning) return;
         isScanning = false;
         beep.play();
-        document.getElementById('scan-bar').style.width = '100%';
-
         fetch(`${webAppUrl}?id=${encodeURIComponent(txt)}`)
             .then(r => r.text())
             .then(d => {
-                showToast(d, d.includes("สำเร็จ") ? 'success' : 'error');
-                setTimeout(() => { 
-                    isScanning = true; 
-                    document.getElementById('scan-bar').style.width = '0%';
-                }, 1200);
-            })
-            .catch(() => {
-                showToast("Connection Error", "error");
-                isScanning = true;
+                Swal.fire({ title: d, icon: d.includes("สำเร็จ") ? 'success' : 'error', timer: 1500, showConfirmButton: false });
+                setTimeout(() => { isScanning = true; }, 1500);
             });
     }
 
     let scanner = new Html5QrcodeScanner("reader", { fps: 30, qrbox: 250 });
     scanner.render(onScanSuccess);
 
-    // --- ระบบจัดการรายชื่อ ---
+    // --- ระบบ List & QR ---
     function loadList() {
         const listDiv = document.getElementById("history-list");
-        listDiv.innerHTML = "<p style='text-align:center; opacity:0.5'>Loading Data...</p>";
+        listDiv.innerHTML = "Loading...";
         fetch(`${webAppUrl}?action=getList`)
             .then(r => r.json())
             .then(data => {
+                globalUserData = data;
                 listDiv.innerHTML = "";
                 data.reverse().forEach(item => {
                     listDiv.innerHTML += `
@@ -165,33 +134,59 @@
                                 <div style="font-weight:700">${item.name}</div>
                                 <div style="font-size:12px; color:#94a3b8">${item.id} • ${item.uni}</div>
                             </div>
-                            <div style="text-align:right">
-                                <span style="font-size:10px; padding:4px 8px; border-radius:10px; background:${item.status === 'Checked In' ? '#065f46':'#334155'}">${item.status}</span>
-                                <div onclick="deleteRow(${item.row})" style="color:#ef4444; font-size:14px; margin-top:8px; cursor:pointer"><i class="fas fa-trash"></i></div>
+                            <div style="display:flex; gap:12px; align-items:center">
+                                <button onclick="viewQr('${item.id}', '${item.name}')" style="background:none; border:none; color:var(--accent); font-size:20px; cursor:pointer"><i class="fas fa-qrcode"></i></button>
+                                <button onclick="deleteRow(${item.row})" style="background:none; border:none; color:#ef4444; cursor:pointer"><i class="fas fa-trash"></i></button>
                             </div>
                         </div>`;
                 });
             });
     }
 
+    function viewQr(id, name) {
+        Swal.fire({
+            title: `คุณ ${name}`,
+            imageUrl: `https://quickchart.io/qr?text=${encodeURIComponent(id)}&size=300`,
+            imageWidth: 250,
+            background: '#1e293b',
+            color: '#fff'
+        });
+    }
+
+    // --- ระบบดาวน์โหลด ZIP (รวมทุก QR) ---
+    async function downloadAllQRs() {
+        if (globalUserData.length === 0) return Swal.fire("ไม่พบข้อมูล", "กรุณากดรีเฟรชหรือเพิ่มรายชื่อก่อน", "warning");
+        
+        Swal.fire({ title: 'กำลังเตรียมไฟล์ ZIP...', text: 'อาจใช้เวลาสักครู่ตามจำนวนคน', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        const zip = new JSZip();
+        const promises = globalUserData.map(async (user) => {
+            const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(user.id)}&size=500`;
+            const response = await fetch(qrUrl);
+            const blob = await response.blob();
+            // บันทึกไฟล์ชื่อ "ID_ชื่อ.png"
+            zip.file(`${user.id}_${user.name}.png`, blob);
+        });
+
+        await Promise.all(promises);
+        zip.generateAsync({type:"blob"}).then(function(content) {
+            saveAs(content, "Event_QR_Codes.zip");
+            Swal.fire("สำเร็จ!", "ดาวน์โหลดไฟล์ ZIP เรียบร้อยแล้ว", "success");
+        });
+    }
+
     function deleteRow(row) {
-        if(confirm("ยืนยันการลบรายชื่อนี้?")) {
-            fetch(`${webAppUrl}?action=delete&row=${row}`).then(() => loadList());
-        }
+        if(confirm("ลบรายชื่อนี้?")) fetch(`${webAppUrl}?action=delete&row=${row}`).then(() => loadList());
     }
 
     function addSingle() {
         const id = document.getElementById('in-id').value;
         const name = document.getElementById('in-name').value;
         const uni = document.getElementById('in-uni').value;
-        if(!id || !name) return Swal.fire("แจ้งเตือน", "กรุณากรอกข้อมูลให้ครบ", "warning");
-
-        fetch(`${webAppUrl}?action=register&id=${id}&name=${encodeURIComponent(name)}&uni=${encodeURIComponent(uni)}`)
-            .then(() => {
-                Swal.fire("สำเร็จ", "บันทึกรายชื่อแล้ว", "success");
-                document.getElementById('in-id').value = "";
-                document.getElementById('in-name').value = "";
-            });
+        fetch(`${webAppUrl}?action=register&id=${id}&name=${encodeURIComponent(name)}&uni=${encodeURIComponent(uni)}`).then(() => {
+            Swal.fire("สำเร็จ", "บันทึกข้อมูลแล้ว", "success");
+            loadList();
+        });
     }
 
     // --- ระบบนำเข้า Excel ---
@@ -204,12 +199,13 @@
             for(let i = 1; i < json.length; i++) {
                 if(json[i][0]) await fetch(`${webAppUrl}?action=register&id=${json[i][0]}&name=${encodeURIComponent(json[i][1])}&uni=${encodeURIComponent(json[i][2]||"")}`);
             }
-            Swal.fire("สำเร็จ", `นำเข้า ${json.length-1} รายชื่อเรียบร้อย`, "success");
+            Swal.fire("สำเร็จ", "นำเข้าข้อมูลแล้ว", "success");
+            loadList();
         };
         reader.readAsArrayBuffer(e.target.files[0]);
     });
 
-    // --- ระบบ Live Board ---
+    // --- ระบบ Live Display ---
     function startLiveUpdate() {
         if (liveInterval) clearInterval(liveInterval);
         liveInterval = setInterval(() => {
@@ -233,22 +229,11 @@
         const container = document.getElementById('live-container');
         const welcome = document.getElementById('welcome-msg');
         if (welcome) welcome.remove();
-
         const entry = document.createElement('div');
         entry.className = 'live-entry';
-        entry.innerHTML = `
-            <div>
-                <div style="font-size:32px; font-weight:800;">${user.name}</div>
-                <div style="font-size:18px; color:#a5b4fc;"><i class="fas fa-university"></i> ${user.uni}</div>
-            </div>
-            <div style="text-align:right">
-                <div style="font-size:45px;">👋</div>
-                <div style="font-size:14px; opacity:0.6;">${new Date(user.time).toLocaleTimeString('th-TH')}</div>
-            </div>`;
+        entry.innerHTML = `<div><div style="font-size:32px; font-weight:800; color:#fff">${user.name}</div><div style="font-size:18px; color:#a5b4fc">${user.uni}</div></div><div style="font-size:40px">👋</div>`;
         container.insertBefore(entry, container.firstChild);
         if (container.children.length > 5) container.lastChild.remove();
-        
-        // เสียงพูดต้อนรับ
         const msg = new SpeechSynthesisUtterance(`ยินดีต้อนรับคุณ ${user.name}`);
         msg.lang = 'th-TH';
         window.speechSynthesis.speak(msg);
