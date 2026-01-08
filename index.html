@@ -3,68 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบสแกนเข้างาน - Staff Only</title>
+    <title>ระบบจัดการผู้เข้าร่วมงาน</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Kanit', sans-serif; text-align: center; background: #f0f2f5; padding: 20px; margin: 0; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h2 { color: #1a73e8; }
-        #reader { width: 100%; border-radius: 10px; overflow: hidden; border: 2px solid #ddd; }
-        #result { margin-top: 20px; font-weight: bold; padding: 20px; border-radius: 10px; font-size: 1.2rem; min-height: 50px; }
-        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .scanning { background: #e2e3e5; color: #383d41; }
+        body { font-family: 'Kanit', sans-serif; background-color: #f4f7f9; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #eee; }
+        .tab-btn { flex: 1; padding: 10px; border: none; background: none; cursor: pointer; font-size: 16px; font-weight: 600; color: #888; }
+        .tab-btn.active { color: #1a73e8; border-bottom: 3px solid #1a73e8; }
+        .content { display: none; }
+        .content.active { display: block; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #1557b0; }
+        #reader { width: 100%; border-radius: 10px; border: 2px solid #eee; }
+        #result, #regResult { margin-top: 15px; padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .qr-display { margin-top: 20px; text-align: center; }
+        img#generatedQr { width: 200px; height: 200px; margin-top: 10px; border: 1px solid #eee; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>ระบบสแกนเข้างาน</h2>
-        <p>สำหรับ Staff (สแกน QR Code เพื่อเช็คอิน)</p>
-        <div id="reader"></div>
-        <div id="result" class="scanning">เตรียมพร้อมสแกน...</div>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-btn active" onclick="openTab('register')">ลงทะเบียน</button>
+        <button class="tab-btn" onclick="openTab('scan')">สแกนเข้างาน</button>
     </div>
 
-    <script>
-        // ใช้ URL ที่คุณสร้างจาก Google Apps Script
-        const webAppUrl = "https://script.google.com/macros/s/AKfycbzvyeuPVVKbW-ZgqDZ3Et9wtijIP484juSUkyI25plI6HDZ5U26MEv9E34UvTQvnhyH/exec";
+    <div id="register" class="content active">
+        <h2>ลงทะเบียนใหม่</h2>
+        <input type="text" id="regId" placeholder="รหัสประจำตัว (ID)">
+        <input type="text" id="regName" placeholder="ชื่อ-นามสกุล">
+        <input type="text" id="regUni" placeholder="มหาวิทยาลัย">
+        <button onclick="registerUser()">บันทึกและสร้าง QR Code</button>
+        <div id="regResult"></div>
+        <div class="qr-display" id="qrContainer" style="display:none;">
+            <p>QR Code ของคุณ:</p>
+            <img id="generatedQr" src="" alt="QR Code">
+            <p><small>แคปหน้าจอเพื่อเก็บไว้สแกน</small></p>
+        </div>
+    </div>
 
-        function onScanSuccess(decodedText) {
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerText = "กำลังตรวจสอบ ID: " + decodedText;
-            resultDiv.className = "scanning";
+    <div id="scan" class="content">
+        <h2>สแกน QR Code</h2>
+        <div id="reader"></div>
+        <div id="result">เตรียมพร้อมสแกน...</div>
+    </div>
+</div>
 
-            // หยุดสแกนชั่วคราวเพื่อรอผลจาก Server
-            html5QrcodeScanner.pause();
+<script>
+    // *** แก้ไข URL นี้ให้เป็นของคุณ ***
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbzvyeuPVVKbW-ZgqDZ3Et9wtijIP484juSUkyI25plI6HDZ5U26MEv9E34UvTQvnhyH/exec";
 
-            fetch(`${webAppUrl}?id=${encodeURIComponent(decodedText)}`)
-                .then(response => response.text())
-                .then(data => {
-                    resultDiv.innerText = data;
-                    if (data.includes("สำเร็จ")) {
-                        resultDiv.className = "success";
-                    } else {
-                        resultDiv.className = "error";
-                    }
-                    
-                    // รอ 3 วินาทีเพื่อให้ Staff อ่านผล แล้วเริ่มสแกนคนต่อไป
-                    setTimeout(() => { 
-                        html5QrcodeScanner.resume(); 
-                        resultDiv.innerText = "เตรียมพร้อมสแกน...";
-                        resultDiv.className = "scanning";
-                    }, 3000);
-                })
-                .catch(error => {
-                    alert("การเชื่อมต่อล้มเหลว ตรวจสอบอินเทอร์เน็ต");
-                    html5QrcodeScanner.resume();
-                });
-        }
+    function openTab(tabName) {
+        document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabName).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
 
-        var html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
-            fps: 10, 
-            qrbox: {width: 250, height: 250},
-            aspectRatio: 1.0
-        });
-        html5QrcodeScanner.render(onScanSuccess);
-    </script>
+    function registerUser() {
+        const id = document.getElementById('regId').value;
+        const name = document.getElementById('regName').value;
+        const uni = document.getElementById('regUni').value;
+        const resDiv = document.getElementById('regResult');
+
+        if(!id || !name || !uni) return alert("กรุณากรอกข้อมูลให้ครบทุกช่อง");
+
+        resDiv.innerText = "กำลังบันทึกข้อมูล...";
+        resDiv.className = "";
+
+        fetch(`${webAppUrl}?action=register&id=${id}&name=${encodeURIComponent(name)}&uni=${encodeURIComponent(uni)}`)
+            .then(res => res.text())
+            .then(data => {
+                resDiv.innerText = data;
+                resDiv.className = "success";
+                
+                // สร้างรูป QR Code ให้ทันทีบนหน้าเว็บ
+                const qrImg = document.getElementById('generatedQr');
+                qrImg.src = `https://quickchart.io/qr?text=${encodeURIComponent(id)}&size=300`;
+                document.getElementById('qrContainer').style.display = "block";
+            })
+            .catch(err => {
+                resDiv.innerText = "เกิดข้อผิดพลาด";
+                resDiv.className = "error";
+            });
+    }
+
+    // ส่วนของกล้องสแกน
+    function onScanSuccess(decodedText) {
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerText = "กำลังตรวจสอบ ID: " + decodedText;
+        html5QrcodeScanner.pause();
+
+        fetch(`${webAppUrl}?id=${encodeURIComponent(decodedText)}`)
+            .then(response => response.text())
+            .then(data => {
+                resultDiv.innerText = data;
+                resultDiv.className = data.includes("สำเร็จ") ? "success" : "error";
+                setTimeout(() => { 
+                    html5QrcodeScanner.resume(); 
+                    resultDiv.innerText = "เตรียมพร้อมสแกน...";
+                    resultDiv.className = "";
+                }, 3000);
+            });
+    }
+
+    var html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+    html5QrcodeScanner.render(onScanSuccess);
+</script>
+
 </body>
 </html>
